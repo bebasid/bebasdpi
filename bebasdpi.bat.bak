@@ -1,0 +1,157 @@
+@echo off && color 0b
+Title bebasdpi ^> %~nx0
+
+:ARCHITECTURE_VALIDATION (
+	if "%PROCESSOR_ARCHITECTURE%" EQU "amd64" ( >nul 2>&1 "%SYSTEMROOT%\SysWOW64\cacls.exe" "%SYSTEMROOT%\SysWOW64\config\system"
+	) else ( >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system" )
+)
+
+:ADMINISTRATOR_VALIDATION (
+	if '%ErrorLevel%' NEQ '0' ( echo.
+		echo bebasdpi sedang meminta hak akses administrator.
+			GOTO :UAC_PROMPT
+	) else ( GOTO :GOT_ADMIN )
+)
+
+:UAC_PROMPT (
+	set params= %*
+
+	echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+	echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %params:"=""%", "", "runas", 1 >> "%temp%\getadmin.vbs"
+
+	"%temp%\getadmin.vbs" && del "%temp%\getadmin.vbs"
+ 
+	exit /b
+) 
+
+:GOT_ADMIN (
+	pushd "%CD%" && CD /D "%~dp0" && GOTO :INITIALIZE
+)
+
+:INITIALIZE (
+	call :BANNER
+	set server=www.google.com
+)
+
+:CEK (
+	echo.
+	echo bebasid sedang memeriksa ada tidaknya koneksi internet.
+	echo.
+	ping %server% > NUL
+	if %ERRORLEVEL%==0 (
+		echo =======================
+		echo Terkoneksi ke internet
+		echo =======================
+		GOTO CEKWIN
+	) else (
+		echo =============================
+		echo Tidak terkoneksi ke internet
+		echo =============================
+		echo.
+		echo Pastikan kamu terkoneksi ke internet
+
+		echo.
+		echo Tekan tombol apa saja untuk keluar
+		pause >nul
+		exit
+	)
+)
+
+:CEKWIN (
+	echo.
+	echo bebasid sedang melihat versi sistem operasi yang sedang digunakan.
+	echo.
+	setlocal
+	for /f "tokens=4-5 delims=. " %%i in ('ver') do set VERSION=%%i.%%j
+	for /f "tokens=4-7 delims=. " %%i in ('ver') do set VERSIONTEN=%%k
+	if "%versionten%" geq "2200" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows 11 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%versionten%" lss "2200" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows 10 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "6.3" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows 8.1 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "6.2" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows 8 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "6.1" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows 7 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "6.0" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows Vista && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "5.2" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows XP x64 && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	if "%version%" == "5.1" echo ===================================== && echo Sistem operasi terdeteksi memakai Windows XP && echo ===================================== && echo. && echo Mohon tunggu sebentar, bebasid sedang menyiapkan bahan yang diperlukan . . . .
+	GOTO TANYA
+)
+
+:TANYA (
+	cls
+	call :BANNER
+	echo.
+	if "%versionten%" geq "2200" (
+		set winver=Windows 11
+	) else if "%versionten%" lss "2200" (
+		set winver=Windows 10
+	) else if "%version%" == "6.3" (
+		set winver=Windows 8.1
+	) else if "%version%" == "6.2" (
+		set winver=Windows 8
+	) else if "%version%" == "6.1" (
+		set winver=Windows 7
+	) else if "%version%" == "6.0" (
+		set winver=Windows Vista
+	) else if "%version%" == "5.2" (
+		set winver=Windows XP x64
+	) else if "%version%" == "5.1" (
+		set winver=Windows XP
+	)
+	echo Hak Administrator diijinkan, perangkat Anda terhubung dengan internet & Anda menggunakan sistem operasi %winver%
+	echo Dengan melanjutkan berarti secara langsung dan tidak langsung, kamu menyetujui apa yang ada di syarat dan ketentuan
+	echo Syarat dan Ketentuan: https://github.com/bebasid/bebasid/blob/master/dev/readme/RULES.md
+	echo.
+	echo PERINTAH
+	echo.
+	echo GoodbyeDPI
+	echo   1. Run GoodbyeDPI
+	echo   2. Install GoodbyeDPI
+	echo   3. Uninstall GoodbyeDPI
+	echo.
+	echo 4. Keluar
+	echo.
+	echo Pilih perintah:
+	echo.
+)
+
+:KONFIRMASI (
+	SET /P pilih=[1/2/3/4]? 
+	IF /I "%pilih%" EQU "1" GOTO RUN
+	IF /I "%pilih%" EQU "2" GOTO INSTALL
+	IF /I "%pilih%" EQU "3" GOTO UNINSTALL
+	IF /I "%pilih%" EQU "4" GOTO KELUAR
+	GOTO KONFIRMASI
+)
+
+:RUN (
+	powershell -Command "Start-Process scripts\run_dnsredir.cmd -Verb RunAs"
+)
+
+:INSTALL (
+	powershell -Command "Start-Process scripts\service_install_dnsredir.cmd -Verb RunAs"
+)
+
+:UNINSTALL (
+	powershell -Command "Start-Process scripts\service_remove.cmd -Verb RunAs"
+)
+
+:KELUAR (
+	exit
+)
+
+:BANNER (
+	echo.
+ 	echo  " _          _                   _       _ "
+ 	echo  "| |        | |                 | |     (_)"
+ 	echo  "| |__   ___| |__   __ _ ___  __| |_ __  _ "
+ 	echo  "| '_ \ / _ \ '_ \ / _` / __|/ _` | '_ \| |"
+ 	echo  "| |_) |  __/ |_) | (_| \__ \ (_| | |_) | |"
+ 	echo  "|_.__/ \___|_.__/ \__,_|___/\__,_| .__/|_|"
+ 	echo  "                                 | |      "
+ 	echo  "                                 |_|      "
+	echo.
+	echo ==   PEDULI INTERNET NETRAL  ==
+	echo.
+	exit /b 0
+)
+
+endlocal
